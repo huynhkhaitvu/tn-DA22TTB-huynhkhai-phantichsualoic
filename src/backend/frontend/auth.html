@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập / Đăng ký - Hệ thống phân tích mã C</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: Inter, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: #f4f4f5;
+            color: #111111;
+        }
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .auth-card {
+            width: min(980px, 100%);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: white;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 18px 48px rgba(15, 23, 42, 0.15);
+        }
+        .auth-side {
+            background: linear-gradient(135deg, #111111 0%, #222222 100%);
+            color: white;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .auth-badge { display: inline-block; width: fit-content; padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,0.16); font-weight: 600; margin-bottom: 18px; }
+        .auth-side h1 { font-size: 1.8rem; margin: 0 0 10px; color: white; }
+        .auth-side p { line-height: 1.6; color: rgba(255,255,255,0.9); }
+        .auth-side ul { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 8px; }
+        .auth-form-panel { padding: 36px 32px; color: #111111; }
+        .auth-title { margin: 0 0 20px; font-size: 1.5rem; color: #111111; }
+        .auth-form { display: none; }
+        .auth-form.active { display: block; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; margin-bottom: 6px; color: #111111; font-weight: 600; font-size: 0.95rem; }
+        .form-group input, .form-group select { width: 100%; padding: 11px 12px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 0.95rem; box-sizing: border-box; color: #111111; background: #ffffff; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #111111; box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.12); }
+        .error-message { color: #dc3545; font-size: 0.9rem; margin-top: 6px; display: none; }
+        .error-message.show { display: block; }
+        .success-message { color: #15803d; font-size: 0.9rem; margin-top: 6px; display: none; background: #ecfdf3; padding: 10px 12px; border-radius: 10px; border: 1px solid #a7f3d0; }
+        .success-message.show { display: block; }
+        .btn { width: 100%; padding: 12px; margin-top: 16px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+        .btn-primary { background: #111111; color: white; }
+        .btn-primary:hover { box-shadow: 0 10px 24px rgba(17, 17, 17, 0.18); }
+        .btn-secondary { background: #f1f5f9; color: #111111; }
+        .form-footer { text-align: center; margin-top: 18px; color: #4b5563; font-size: 0.95rem; }
+        .form-footer a { color: #111111; cursor: pointer; text-decoration: none; font-weight: 700; }
+        .loading { display: none; text-align: center; color: #111111; }
+        .loading.show { display: block; }
+        .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #111111; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; margin: 10px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
+        .divider { display: flex; align-items: center; margin: 20px 0; color: #6b7280; }
+        .divider:before, .divider:after { content: ''; flex: 1; height: 1px; background: #e5e7eb; }
+        .divider:before { margin-right: 10px; }
+        .divider:after { margin-left: 10px; }
+        .btn-google { background: white; border: 1px solid #d1d5db; color: #111111; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; }
+        .btn-google:hover { background: #f8fafc; }
+        .google-icon { width: 20px; height: 20px; }
+        @media (max-width: 768px) { .auth-card { grid-template-columns: 1fr; } .auth-side { padding: 28px; } .auth-form-panel { padding: 24px 20px; } }
+    </style>
+</head>
+<body>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-side">
+                <div class="auth-badge">C Code Analyzer</div>
+                <h1>Học C một cách chủ động</h1>
+                <p>Đăng nhập để tiếp tục làm bài, chạy mã và nhận trợ giúp đúng trọng tâm.</p>
+                <ul>
+                    <li>✅ Chọn đề bài dễ dàng</li>
+                    <li>✅ Biên dịch và chạy ngay trong giao diện</li>
+                    <li>✅ Hỗ trợ học sinh và giáo viên</li>
+                </ul>
+            </div>
+            <div class="auth-form-panel">
+                <div id="loginForm" class="auth-form active">
+                    <h2 class="auth-title">Đăng Nhập</h2>
+                    <form onsubmit="handleLogin(event)">
+                        <div class="form-group">
+                            <label for="loginUsername">Tên đăng nhập</label>
+                            <input type="text" id="loginUsername" required placeholder="Nhập tên đăng nhập">
+                        </div>
+                        <div class="form-group">
+                            <label for="loginPassword">Mật khẩu</label>
+                            <input type="password" id="loginPassword" required placeholder="Nhập mật khẩu">
+                        </div>
+                        <div id="loginError" class="error-message"></div>
+                        <div id="loginSuccess" class="success-message"></div>
+                        <div id="loginLoading" class="loading">
+                            <div class="spinner"></div>
+                            <p>Đang xử lý...</p>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="loginBtn">Đăng Nhập</button>
+                    </form>
+                    <div class="divider">Hoặc</div>
+                    <div id="googleLoginButton"></div>
+                    <div class="form-footer">
+                        Chưa có tài khoản? <a onclick="toggleForm('signup')">Đăng ký ngay</a>
+                    </div>
+                </div>
+
+                <div id="signupForm" class="auth-form">
+                    <h2 class="auth-title">Đăng Ký</h2>
+                    <form onsubmit="handleSignup(event)">
+                        <div class="form-group">
+                            <label for="signupUsername">Tên đăng nhập</label>
+                            <input type="text" id="signupUsername" required placeholder="Ít nhất 3 ký tự" minlength="3">
+                        </div>
+                        <div class="form-group">
+                            <label for="signupEmail">Email</label>
+                            <input type="email" id="signupEmail" required placeholder="Nhập email">
+                        </div>
+                        <div class="form-group">
+                            <label for="signupPassword">Mật khẩu</label>
+                            <input type="password" id="signupPassword" required placeholder="Ít nhất 6 ký tự" minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label for="signupPasswordConfirm">Xác nhận mật khẩu</label>
+                            <input type="password" id="signupPasswordConfirm" required placeholder="Nhập lại mật khẩu">
+                        </div>
+                        <div id="signupError" class="error-message"></div>
+                        <div id="signupSuccess" class="success-message"></div>
+                        <div id="signupLoading" class="loading">
+                            <div class="spinner"></div>
+                            <p>Đang xử lý...</p>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="signupBtn">Đăng Ký</button>
+                    </form>
+                    <div class="divider">Hoặc</div>
+                    <div id="googleSignupButton"></div>
+                    <div class="form-footer">
+                        Đã có tài khoản? <a onclick="toggleForm('login')">Đăng nhập</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Use relative API base so frontend and backend share origin (cookies work)
+        const API_BASE = '/api';
+
+        function toggleForm(form) {
+            document.getElementById('loginForm').classList.remove('active');
+            document.getElementById('signupForm').classList.remove('active');
+            
+            if (form === 'login') {
+                document.getElementById('loginForm').classList.add('active');
+                clearMessages('login');
+            } else {
+                document.getElementById('signupForm').classList.add('active');
+                clearMessages('signup');
+            }
+        }
+
+        function clearMessages(form) {
+            const errorEl = document.getElementById(`${form}Error`);
+            const successEl = document.getElementById(`${form}Success`);
+            errorEl.classList.remove('show');
+            successEl.classList.remove('show');
+        }
+
+        function showError(form, message) {
+            const errorEl = document.getElementById(`${form}Error`);
+            errorEl.textContent = message;
+            errorEl.classList.add('show');
+            document.getElementById(`${form}Success`).classList.remove('show');
+        }
+
+        function showSuccess(form, message) {
+            const successEl = document.getElementById(`${form}Success`);
+            successEl.textContent = message;
+            successEl.classList.add('show');
+            document.getElementById(`${form}Error`).classList.remove('show');
+        }
+
+        function showLoading(form, show = true) {
+            const loadingEl = document.getElementById(`${form}Loading`);
+            const btnEl = document.getElementById(`${form}Btn`);
+            
+            if (show) {
+                loadingEl.classList.add('show');
+                btnEl.disabled = true;
+            } else {
+                loadingEl.classList.remove('show');
+                btnEl.disabled = false;
+            }
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!username || !password) {
+                showError('login', 'Vui lòng nhập tên đăng nhập và mật khẩu');
+                return;
+            }
+            
+            showLoading('login', true);
+            clearMessages('login');
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess('login', 'Đăng nhập thành công! Đang chuyển hướng...');
+                    setTimeout(() => {
+                        window.location.href = '/index.html';
+                    }, 1500);
+                } else {
+                    showError('login', data.error || 'Đăng nhập thất bại');
+                }
+            } catch (error) {
+                showError('login', 'Lỗi kết nối: ' + error.message);
+            } finally {
+                showLoading('login', false);
+            }
+        }
+
+        async function handleSignup(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('signupUsername').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
+            const password = document.getElementById('signupPassword').value;
+            const passwordConfirm = document.getElementById('signupPasswordConfirm').value;
+            
+            // Validation
+            if (!username || !email || !password || !passwordConfirm) {
+                showError('signup', 'Vui lòng nhập đầy đủ thông tin');
+                return;
+            }
+            
+            if (username.length < 3) {
+                showError('signup', 'Tên đăng nhập phải từ 3 ký tự trở lên');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showError('signup', 'Mật khẩu phải từ 6 ký tự trở lên');
+                return;
+            }
+            
+            if (password !== passwordConfirm) {
+                showError('signup', 'Mật khẩu không khớp');
+                return;
+            }
+            
+            showLoading('signup', true);
+            clearMessages('signup');
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        email: email,
+                        password: password,
+                        password_confirm: passwordConfirm
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess('signup', 'Đăng ký thành công! Vui lòng đăng nhập.');
+                    // Reset form
+                    event.target.reset();
+                    setTimeout(() => {
+                        toggleForm('login');
+                    }, 2000);
+                } else {
+                    showError('signup', data.error || 'Đăng ký thất bại');
+                }
+            } catch (error) {
+                showError('signup', 'Lỗi kết nối: ' + error.message);
+            } finally {
+                showLoading('signup', false);
+            }
+        }
+
+        // Check if already logged in
+        async function checkAuth() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/check`, {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                if (data.authenticated) {
+                    window.location.href = '/index.html';
+                }
+            } catch (error) {
+                console.log('Auth check error:', error);
+            }
+        }
+
+        // Google Sign-In Handler
+        const GOOGLE_CLIENT_ID = '324954443132-g7q1iqolbmhf3ofbot0ipfuera3u3qh6.apps.googleusercontent.com';
+
+        function handleCredentialResponse(response) {
+            // The response contains the JWT in response.credential
+            const token = response.credential;
+            
+            // Decode JWT to get user info (basic parsing - for production use proper JWT library)
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            
+            const userInfo = JSON.parse(jsonPayload);
+            
+            // Check if on signup or login form
+            const form = document.getElementById('loginForm').classList.contains('active') ? 'login' : 'signup';
+            
+            if (form === 'login') {
+                loginWithGoogle(userInfo);
+            } else {
+                signupWithGoogle(userInfo);
+            }
+        }
+
+        async function loginWithGoogle(userInfo) {
+            try {
+                showLoading('login', true);
+                
+                // Gọi endpoint Google login - tự động tạo user nếu chưa tồn tại
+                const response = await fetch(`${API_BASE}/auth/google-login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        email: userInfo.email,
+                        full_name: userInfo.name || ''
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const message = data.is_new 
+                        ? 'Đăng ký & đăng nhập bằng Google thành công!'
+                        : 'Đăng nhập bằng Google thành công!';
+                    showSuccess('login', message);
+                    setTimeout(() => {
+                        window.location.href = '/index.html';
+                    }, 1500);
+                } else {
+                    showError('login', data.error || 'Đăng nhập bằng Google thất bại');
+                }
+            } catch (error) {
+                showError('login', 'Lỗi kết nối: ' + error.message);
+            } finally {
+                showLoading('login', false);
+            }
+        }
+
+        async function signupWithGoogle(userInfo) {
+            try {
+                showLoading('signup', true);
+                
+                // Gọi cùng endpoint - tự động tạo user nếu chưa tồn tại
+                const response = await fetch(`${API_BASE}/auth/google-login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        email: userInfo.email,
+                        full_name: userInfo.name || ''
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccess('signup', 'Đăng ký & đăng nhập bằng Google thành công!');
+                    // Chuyển hướng sau 1.5 giây
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1500);
+                } else {
+                    showError('signup', data.error || 'Đăng ký bằng Google thất bại');
+                }
+            } catch (error) {
+                showError('signup', 'Lỗi kết nối: ' + error.message);
+            } finally {
+                showLoading('signup', false);
+            }
+        }
+
+        // Initialize Google Sign-In
+        function initGoogleSignIn() {
+            google.accounts.id.initialize({
+                client_id: GOOGLE_CLIENT_ID,
+                callback: handleCredentialResponse
+            });
+
+            // Render buttons
+            google.accounts.id.renderButton(
+                document.getElementById('googleLoginButton'),
+                {
+                    theme: 'outline',
+                    size: 'large',
+                    width: '100%'
+                }
+            );
+
+            google.accounts.id.renderButton(
+                document.getElementById('googleSignupButton'),
+                {
+                    theme: 'outline',
+                    size: 'large',
+                    width: '100%'
+                }
+            );
+        }
+
+        // Check auth on page load
+        checkAuth();
+
+        // Initialize Google Sign-In when script loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait for Google script to load
+            if (window.google && window.google.accounts) {
+                initGoogleSignIn();
+            } else {
+                // Try again after a short delay
+                setTimeout(initGoogleSignIn, 1000);
+            }
+        });
+    </script>
+</body>
+</html>

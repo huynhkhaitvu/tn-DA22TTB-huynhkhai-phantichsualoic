@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Phân Tích Lỗi Code C - Trang Chủ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .container-main {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 50px;
+            max-width: 900px;
+            width: 90%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-weight: 700;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: #999;
+            font-size: 0.95rem;
+            margin-top: 15px;
+        }
+
+        .features {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 40px;
+            flex-wrap: wrap;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            min-width: 350px;
+            max-width: 450px;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+        }
+
+        .feature-card.analyze {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .feature-card.learning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .feature-card h3 {
+            color: white;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 1.5rem;
+        }
+
+        .feature-card p {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .btn-feature {
+            margin-top: 15px;
+            padding: 10px 25px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card.learning .btn-feature {
+            color: #f5576c;
+        }
+
+        .btn-feature:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .status-bar {
+            margin-top: 40px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            font-size: 0.95rem;
+        }
+
+        .status-icon {
+            margin-right: 10px;
+            font-weight: bold;
+            min-width: 20px;
+        }
+
+        .status-icon.ok {
+            color: #28a745;
+        }
+
+        .status-icon.loading {
+            color: #ffc107;
+        }
+
+        .status-icon.error {
+            color: #dc3545;
+        }
+
+        .status-text {
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .features {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .container-main {
+                padding: 30px;
+            }
+
+            .feature-card {
+                min-width: 100%;
+                max-width: 100%;
+            }
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffc107;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-main">
+        <!-- Header -->
+        <div class="header">
+            <h1>🔍 Code Analysis System</h1>
+            <p>Hệ Thống Phân Tích và Sửa Lỗi Code C</p>
+            <p class="subtitle">Powered by AI (Gemini) - Tự động phân tích và gợi ý sửa lỗi</p>
+        </div>
+
+        <!-- Status Check -->
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="status-icon loading"><div class="loading-spinner"></div></span>
+                <span class="status-text">Đang kiểm tra kết nối Backend...</span>
+            </div>
+            <div class="status-item" id="status-backend">
+                <span class="status-icon">?</span>
+                <span class="status-text">Backend (localhost:5000): Kiểm tra...</span>
+            </div>
+            <div class="status-item" id="status-gcc">
+                <span class="status-icon">?</span>
+                <span class="status-text">GCC Compiler: Kiểm tra...</span>
+            </div>
+            <div class="status-item" id="status-api">
+                <span class="status-icon">?</span>
+                <span class="status-text">Gemini API: Kiểm tra...</span>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div class="features">
+            <!-- Analyze Card -->
+            <div class="feature-card analyze" onclick="checkAuthAndGo('frontend/index.html')">
+                <div class="feature-icon">📊</div>
+                <h3>Phân Tích Code</h3>
+                <p>Nhập code C, biên dịch, chạy test, và nhận phân tích lỗi tự động từ AI</p>
+                <button class="btn-feature">Mở ngay →</button>
+            </div>
+
+            <!-- Learning Card removed per user request -->
+        </div>
+
+        <!-- Footer Info -->
+        <div style="margin-top: 40px; text-align: center; color: #999; font-size: 0.9rem;">
+            <p>🚀 Hệ thống chạy trên máy tính cá nhân (localhost)</p>
+            <p style="margin-top: 5px;">Backend: Port 5000 | AI: Gemini API | Database: SQLite</p>
+        </div>
+    </div>
+
+    <script>
+        // Check authentication and open page
+        async function checkAuthAndGo(filename) {
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/check', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                if (data.authenticated) {
+                    // User is logged in, go to analyzer
+                    const currentPath = window.location.href;
+                    const baseUrl = currentPath.substring(0, currentPath.lastIndexOf('/'));
+                    window.location.href = baseUrl + '/' + filename;
+                } else {
+                    // Not logged in, redirect to login
+                    const currentPath = window.location.href;
+                    const baseUrl = currentPath.substring(0, currentPath.lastIndexOf('/'));
+                    window.location.href = baseUrl + '/frontend/auth.html';
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                // On error, redirect to login to be safe
+                const currentPath = window.location.href;
+                const baseUrl = currentPath.substring(0, currentPath.lastIndexOf('/'));
+                window.location.href = baseUrl + '/frontend/auth.html';
+            }
+        }
+
+        // Open page function
+        function openPage(filename) {
+            // Get the directory of current file
+            const currentPath = window.location.href;
+            const baseUrl = currentPath.substring(0, currentPath.lastIndexOf('/'));
+            const targetUrl = baseUrl + '/' + filename;
+            
+            window.location.href = targetUrl;
+        }
+
+        // Check backend status
+        async function checkBackendStatus() {
+            try {
+                const response = await fetch('http://localhost:5000/api/health', {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                if (response.ok) {
+                    updateStatus('status-backend', 'ok', 'Backend (localhost:5000): ✓ Đang chạy');
+                    // If backend is running, check other statuses
+                    checkGCCStatus();
+                    checkAPIStatus();
+                } else {
+                    updateStatus('status-backend', 'error', 'Backend (localhost:5000): ❌ Lỗi kết nối');
+                }
+            } catch (error) {
+                updateStatus('status-backend', 'error', 'Backend (localhost:5000): ❌ Không chạy');
+                updateStatus('status-gcc', 'error', 'GCC Compiler: ❌ Không kiểm tra được');
+                updateStatus('status-api', 'error', 'Gemini API: ❌ Không kiểm tra được');
+            }
+        }
+
+        // Check GCC status
+        async function checkGCCStatus() {
+            try {
+                const response = await fetch('http://localhost:5000/api/check-gcc', {
+                    method: 'GET'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.gcc_available) {
+                        updateStatus('status-gcc', 'ok', `GCC Compiler: ✓ ${data.gcc_version}`);
+                    } else {
+                        updateStatus('status-gcc', 'error', 'GCC Compiler: ❌ Chưa cài đặt');
+                    }
+                }
+            } catch (error) {
+                updateStatus('status-gcc', 'error', 'GCC Compiler: ❌ Không kiểm tra được');
+            }
+        }
+
+        // Check API status
+        async function checkAPIStatus() {
+            try {
+                const response = await fetch('http://localhost:5000/api/check-api', {
+                    method: 'GET'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.api_available) {
+                        updateStatus('status-api', 'ok', 'Gemini API: ✓ Sẵn sàng');
+                    } else {
+                        updateStatus('status-api', 'error', 'Gemini API: ❌ Chưa cấu hình');
+                    }
+                }
+            } catch (error) {
+                updateStatus('status-api', 'error', 'Gemini API: ❌ Không kiểm tra được');
+            }
+        }
+
+        // Update status display
+        function updateStatus(elementId, status, message) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                const icon = element.querySelector('.status-icon');
+                const text = element.querySelector('.status-text');
+                
+                icon.className = 'status-icon ' + status;
+                
+                if (status === 'ok') {
+                    icon.textContent = '✓';
+                } else if (status === 'error') {
+                    icon.textContent = '✗';
+                } else {
+                    icon.textContent = '?';
+                }
+                
+                text.textContent = message;
+            }
+        }
+
+        // Check status on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            checkBackendStatus();
+        });
+    </script>
+</body>
+</html>
