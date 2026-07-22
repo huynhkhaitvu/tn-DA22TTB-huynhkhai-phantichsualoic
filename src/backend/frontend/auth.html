@@ -66,6 +66,15 @@
         .divider:before, .divider:after { content: ''; flex: 1; height: 1px; background: #e5e7eb; }
         .divider:before { margin-right: 10px; }
         .divider:after { margin-left: 10px; }
+        #googleLoginButton, #googleSignupButton {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin: 0 auto;
+        }
+        #googleLoginButton > div, #googleSignupButton > div {
+            margin: 0 auto;
+        }
         .btn-google { background: white; border: 1px solid #d1d5db; color: #111111; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; }
         .btn-google:hover { background: #f8fafc; }
         .google-icon { width: 20px; height: 20px; }
@@ -425,30 +434,52 @@
         }
 
         // Initialize Google Sign-In
+        function showGoogleUnavailableMessage() {
+            const loginContainer = document.getElementById('googleLoginButton');
+            const signupContainer = document.getElementById('googleSignupButton');
+            const message = '<div style="padding:10px 12px; border:1px dashed #d1d5db; border-radius:10px; color:#4b5563; background:#f8fafc; font-size:0.92rem;">Google đăng nhập hiện chưa được cấu hình cho domain này. Vui lòng dùng đăng nhập bằng tài khoản nội bộ.</div>';
+            if (loginContainer) loginContainer.innerHTML = message;
+            if (signupContainer) signupContainer.innerHTML = message;
+        }
+
+        // Initialize Google Sign-In
         function initGoogleSignIn() {
-            google.accounts.id.initialize({
-                client_id: GOOGLE_CLIENT_ID,
-                callback: handleCredentialResponse
-            });
+            if (!window.google || !window.google.accounts || !window.google.accounts.id) {
+                showGoogleUnavailableMessage();
+                return;
+            }
 
-            // Render buttons
-            google.accounts.id.renderButton(
-                document.getElementById('googleLoginButton'),
-                {
-                    theme: 'outline',
-                    size: 'large',
-                    width: '100%'
-                }
-            );
+            try {
+                google.accounts.id.initialize({
+                    client_id: GOOGLE_CLIENT_ID,
+                    callback: handleCredentialResponse
+                });
 
-            google.accounts.id.renderButton(
-                document.getElementById('googleSignupButton'),
-                {
-                    theme: 'outline',
-                    size: 'large',
-                    width: '100%'
-                }
-            );
+                const panel = document.querySelector('.auth-form-panel');
+                const panelWidth = panel ? panel.clientWidth : 360;
+                const buttonWidth = Math.max(220, Math.min(320, panelWidth - 64));
+
+                google.accounts.id.renderButton(
+                    document.getElementById('googleLoginButton'),
+                    {
+                        theme: 'outline',
+                        size: 'large',
+                        width: buttonWidth
+                    }
+                );
+
+                google.accounts.id.renderButton(
+                    document.getElementById('googleSignupButton'),
+                    {
+                        theme: 'outline',
+                        size: 'large',
+                        width: buttonWidth
+                    }
+                );
+            } catch (error) {
+                console.warn('Google Sign-In unavailable:', error);
+                showGoogleUnavailableMessage();
+            }
         }
 
         // Check auth on page load
