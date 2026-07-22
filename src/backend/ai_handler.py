@@ -16,7 +16,12 @@ except Exception:
 
 
 class AIHandler:
-    """Xử lý yêu cầu với Gemini AI (OpenRouter support removed)"""
+    """Đóng gói các cuộc gọi tới AI để phân tích lỗi và đề xuất cách sửa.
+
+    Hỗ trợ nhiều provider như Gemini, OpenRouter và Groq. Mỗi phương thức nhận
+    mã nguồn và kết quả kiểm thử để tạo prompt phù hợp rồi trả về phản hồi có thể
+    dùng trực tiếp cho frontend.
+    """
 
     def __init__(self, api_key: str, openrouter_key: str = '', groq_key: str = ''):
         # Gemini config

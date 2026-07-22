@@ -1,5 +1,7 @@
-"""
-Module phân tích mã C - Biên dịch, chạy và so sánh output
+"""Công cụ phân tích mã C dùng để biên dịch, chạy và đánh giá kết quả test case.
+
+Module này tạo file C tạm thời, gọi GCC để biên dịch, rồi thực thi chương trình
+để so sánh output với expected output của testcase.
 """
 import subprocess
 import os
@@ -140,6 +142,8 @@ class CodeAnalyzer:
                     passed_count += 1
                 test_results.append({
                     'testcase': i + 1,
+                    'testcase_name': testcase.get('name') or testcase.get('ten_testcase') or f'Testcase {i + 1}',
+                    'name': testcase.get('name') or testcase.get('ten_testcase') or f'Testcase {i + 1}',
                     'passed': passed,
                     'input': test_input,
                     'expected': expected_output,
@@ -199,6 +203,8 @@ class CodeAnalyzer:
 
                 test_result = {
                     'testcase': i + 1,
+                    'testcase_name': testcase.get('name') or testcase.get('ten_testcase') or f'Testcase {i + 1}',
+                    'name': testcase.get('name') or testcase.get('ten_testcase') or f'Testcase {i + 1}',
                     'passed': False,
                     'input': test_input,
                     'expected': expected_output,

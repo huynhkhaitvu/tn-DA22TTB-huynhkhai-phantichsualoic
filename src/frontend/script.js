@@ -1,3 +1,7 @@
+/**
+ * Frontend chính cho hệ thống luyện tập ngôn ngữ C.
+ * Quản lý đăng nhập, chọn đề bài, biên dịch/chạy code và tương tác với backend.
+ */
 const API_BASE_URL = '/api';
 let currentProblem = null;
 let currentUser = null;
@@ -9,6 +13,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function initializeEventListeners() {
+    // Gắn các sự kiện cho các nút và form trên giao diện chính.
     const compileBtn = document.getElementById('compileBtn');
     if (compileBtn) compileBtn.addEventListener('click', handleCompile);
 
@@ -118,6 +123,7 @@ function initializeEventListeners() {
 }
 
 async function checkAuthAndLoad() {
+    // Kiểm tra trạng thái đăng nhập và tải dữ liệu ban đầu cho người dùng.
     try {
         const response = await fetch(`${API_BASE_URL}/auth/check`, { credentials: 'include' });
         const data = await response.json();
@@ -193,6 +199,7 @@ async function checkAuthAndLoad() {
 }
 
 async function loadProblems() {
+    // Tải danh sách đề bài từ backend và render vào select box.
     const response = await fetch(`${API_BASE_URL}/problems`);
     const data = await response.json();
     const select = document.getElementById('problemSelect');
@@ -246,6 +253,7 @@ function renderTeacherProblemList(problems, selectedId = null) {
 }
 
 async function loadProblemDetails(problemId) {
+    // Hiển thị chi tiết đề bài và testcase tương ứng khi người dùng chọn đề.
     const response = await fetch(`${API_BASE_URL}/problems/${problemId}`);
     const data = await response.json();
     currentProblem = data.problem;
@@ -383,13 +391,16 @@ function getActiveTestcases() {
     if (currentProblem && currentProblem.testcases) {
         return currentProblem.testcases.map(tc => ({
             input: tc.input_data || '',
-            expected_output: tc.expected_output || ''
+            expected_output: tc.expected_output || '',
+            name: tc.ten_testcase || tc.name || '',
+            ten_testcase: tc.ten_testcase || tc.name || ''
         }));
     }
     return [];
 }
 
 async function handleCompile() {
+    // Gửi mã hiện tại tới API compile để kiểm tra lỗi biên dịch.
     const code = getCode();
     if (!code.trim()) {
         showResult('Vui lòng nhập mã C trước khi biên dịch.', 'error');
@@ -406,6 +417,7 @@ async function handleCompile() {
 }
 
 async function handleRun() {
+    // Chạy chương trình với testcase đang chọn và hiển thị output.
     const code = getCode();
     if (!code.trim()) {
         showResult('Vui lòng nhập mã C trước khi chạy.', 'error');
@@ -422,6 +434,7 @@ async function handleRun() {
 }
 
 async function handleHelp() {
+    // Gửi mã hiện tại tới AI để nhận gợi ý sửa lỗi khi người dùng cần hỗ trợ.
     const code = getCode();
     if (!code.trim()) {
         showResult('Vui lòng nhập mã C trước khi nhận gợi ý.', 'error');
@@ -447,6 +460,7 @@ async function handleHelp() {
 }
 
 async function handleCreateProblem() {
+    // Tạo đề bài mới từ form của giáo viên hoặc admin.
     const titleInput = document.getElementById('problemTitle');
     const descriptionInput = document.getElementById('problemDescription');
     const requirementsInput = document.getElementById('problemRequirements');
@@ -644,8 +658,9 @@ async function viewTeacherStudentDetail(userId) {
             <div class="management-section">
                 <div class="management-section-header">
                     <div>
-                        <h5>👤 Chi tiết học sinh</h5>
-                        <div class="management-section-subtitle">Thông tin tài khoản và lịch sử làm bài</div>
+                            <h5>👤 Chi tiết học sinh</h5>
+                            <div class="management-section-subtitle">Thông tin tài khoản và lịch sử làm bài</div>
+                            <div style="margin-top:8px;"><button class="btn btn-outline-primary btn-sm" onclick="exportStudentCSV(${user.id})">Xuất CSV</button></div>
                     </div>
                 </div>
                 <div class="management-row" style="display:block;">
@@ -801,8 +816,9 @@ async function viewStudentDetail(userId, panelId = null) {
         <div class="management-section">
             <div class="management-section-header">
                 <div>
-                    <h5>${infoTitle}</h5>
+                        <h5>${infoTitle}</h5>
                     <div class="management-section-subtitle">${infoSubtitle}</div>
+                    ${isTeacher ? '' : `<div style="margin-top:8px;"><button class="btn btn-outline-primary btn-sm" onclick="exportStudentCSV(${user.id})">Xuất CSV</button></div>`}
                 </div>
             </div>
             <div class="management-row" style="display:block;">
@@ -873,6 +889,56 @@ async function viewStudentDetail(userId, panelId = null) {
     `;
 }
 
+async function exportStudentCSV(userId) {
+    try {
+        const result = await requestJson(`/admin/users/${userId}/submissions`);
+        const submissions = result.success ? (result.submissions || []) : [];
+        if (!submissions.length) {
+            showResult('Học sinh chưa có bài làm để xuất CSV.', 'info');
+            return;
+        }
+
+        const rows = [];
+        // Vietnamese headers (keep 'id' as-is) — removed 'Kết quả chạy'
+        rows.push(['id','Thời gian','Mã đề','Tiêu đề đề bài','Biên dịch thành công','Số test passed','Tổng số test','Kết quả test','Mã nguồn']);
+
+        submissions.forEach(s => {
+            const testResults = Array.isArray(s.test_results) ? JSON.stringify(s.test_results) : '';
+            const passed = Number(s.passed_count ?? (Array.isArray(s.test_results) ? s.test_results.filter(t => t && t.passed).length : 0));
+            const total = Number(s.total_count ?? (Array.isArray(s.test_results) ? s.test_results.length : 0));
+            const compileSuccess = s.compile_status && s.compile_status.success ? 'true' : 'false';
+            rows.push([
+                s.id || '',
+                s.created_at || '',
+                s.problem_id || '',
+                s.problem_title || '',
+                compileSuccess,
+                passed,
+                total,
+                testResults.replace(/"/g, '""'),
+                (s.code || '').replace(/\r?\n/g, ' ')
+            ]);
+        });
+
+        const csv = rows.map(r => r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+        // Prepend UTF-8 BOM so Excel on Windows recognizes UTF-8 encoding
+        const csvContent = '\uFEFF' + csv;
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `student_${userId}_submissions.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        showResult('Đã tải xuống CSV.', 'success');
+    } catch (e) {
+        console.error('Export CSV error:', e);
+        showResult('Không thể xuất CSV: ' + (e.message || e), 'error');
+    }
+}
+
 async function requestJson(path, body = null, method = null) {
     const requestMethod = method || (body ? 'POST' : 'GET');
     const options = { method: requestMethod, headers: { 'Content-Type': 'application/json' }, credentials: 'include' };
@@ -894,14 +960,18 @@ function formatRunResult(result) {
     const testcaseSummary = result.total_count ? `<div><strong>📊 Tiến độ testcase:</strong> ${result.passed_count ?? 0}/${result.total_count}</div>` : '';
     const detailRows = (result.test_results || []).map((item, index) => {
         const statusLabel = item.passed ? '✅ Đúng' : '❌ Sai';
-        const expected = item.expected_output ?? '';
-        const actual = item.actual_output ?? '';
+        const expected = item.expected_output ?? item.expected ?? item.expected_output_value ?? '';
+        const actual = item.actual_output ?? item.actual ?? item.actual_output_value ?? '';
+        const testcaseName = (item.testcase_name || item.name || '').trim();
+        const testcaseLabel = testcaseName && !testcaseName.toLowerCase().startsWith(`testcase ${index + 1}`.toLowerCase()) && !testcaseName.toLowerCase().startsWith('testcase')
+            ? `Testcase ${index + 1}: ${testcaseName}`
+            : (testcaseName || `Testcase ${index + 1}`);
         const detailParts = [];
         if (expected) detailParts.push(`<div><strong>Expected:</strong> ${escapeHtml(expected)}</div>`);
         if (actual) detailParts.push(`<div><strong>Actual:</strong> ${escapeHtml(actual)}</div>`);
         return `
             <div class="mt-2 border rounded p-2">
-                <div><strong>Test ${index + 1}:</strong> ${statusLabel}</div>
+                <div><strong>${escapeHtml(testcaseLabel)}</strong> ${statusLabel}</div>
                 ${detailParts.join('')}
             </div>
         `;

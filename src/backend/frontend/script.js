@@ -928,6 +928,7 @@ async function viewTeacherStudentDetail(userId) {
                     <div>
                         <h5>👤 Chi tiết học sinh</h5>
                         <div class="management-section-subtitle">Thông tin tài khoản và lịch sử làm bài</div>
+                        <div style="margin-top:8px;"><button class="btn btn-outline-primary btn-sm" onclick="exportStudentCSV(${user.id})">Xuất CSV</button></div>
                     </div>
                 </div>
                 <div class="management-row" style="display:block;">
@@ -1013,6 +1014,56 @@ async function viewTeacherStudentSubmissions(userId) {
     `;
 }
 
+async function exportStudentCSV(userId) {
+    try {
+        const result = await requestJson(`/admin/users/${userId}/submissions`);
+        const submissions = result.success ? (result.submissions || []) : [];
+        if (!submissions.length) {
+            showError('Học sinh chưa có bài làm để xuất CSV.');
+            return;
+        }
+
+        const rows = [];
+        // Vietnamese headers (keep 'id' as-is) — removed 'Kết quả chạy'
+        rows.push(['id','Thời gian','Mã đề','Tiêu đề đề bài','Biên dịch thành công','Số test passed','Tổng số test','Kết quả test','Mã nguồn']);
+
+        submissions.forEach(s => {
+            const testResults = Array.isArray(s.test_results) ? JSON.stringify(s.test_results) : '';
+            const passed = Number(s.passed_count ?? (Array.isArray(s.test_results) ? s.test_results.filter(t => t && t.passed).length : 0));
+            const total = Number(s.total_count ?? (Array.isArray(s.test_results) ? s.test_results.length : 0));
+            const compileSuccess = s.compile_status && s.compile_status.success ? 'true' : 'false';
+            rows.push([
+                s.id || '',
+                s.created_at || '',
+                s.problem_id || '',
+                s.problem_title || '',
+                compileSuccess,
+                passed,
+                total,
+                testResults.replace(/"/g, '""'),
+                (s.code || '').replace(/\r?\n/g, ' ')
+            ]);
+        });
+
+        const csv = rows.map(r => r.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+        // Prepend UTF-8 BOM so Excel on Windows recognizes UTF-8 encoding
+        const csvContent = '\uFEFF' + csv;
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `student_${userId}_submissions.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        showSuccess('Đã tải xuống CSV.');
+    } catch (e) {
+        console.error('Export CSV error:', e);
+        showError('Không thể xuất CSV: ' + (e.message || e));
+    }
+}
+
 async function loadAdminUsers() {
     try {
         const result = await requestJson('/admin/users');
@@ -1089,6 +1140,7 @@ async function viewStudentDetail(userId, panelId = null) {
                 <div>
                     <h5>${infoTitle}</h5>
                     <div class="management-section-subtitle">${infoSubtitle}</div>
+                    ${isTeacher ? '' : `<div style="margin-top:8px;"><button class="btn btn-outline-primary btn-sm" onclick="exportStudentCSV(${user.id})">Xuất CSV</button></div>`}
                 </div>
             </div>
             <div class="management-row" style="display:block;">

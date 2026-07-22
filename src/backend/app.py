@@ -1,6 +1,10 @@
-"""
-Ứng dụng Flask chính cho hệ thống phân tích và sửa lỗi mã C.
-Hỗ trợ 3 vai trò: admin, giaovien, hoc_sinh.
+"""Flask application chính cho hệ thống phân tích và sửa lỗi mã C.
+
+Module này cung cấp các endpoint cho:
+- biên dịch/chạy mã C của học sinh
+- phân tích lỗi và đề xuất sửa lỗi bằng AI
+- quản lý đề bài, testcase và bài nộp
+- đăng nhập, phân quyền và session người dùng
 """
 from flask import Flask, request, jsonify, session, send_from_directory
 from flask_cors import CORS
@@ -41,11 +45,13 @@ app.db = db
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
+    """Trả về trạng thái hoạt động của backend."""
     return jsonify({'status': 'ok', 'message': 'Server is running'})
 
 
 @app.route('/api/compile', methods=['POST'])
 def compile_code():
+    """Biên dịch mã C gửi từ frontend và trả về kết quả compile."""
     try:
         data = request.get_json(silent=True) or {}
         code = data.get('code')
@@ -88,6 +94,7 @@ def compile_code():
 
 @app.route('/api/run', methods=['POST'])
 def run_code():
+    """Chạy mã C với input cho trước và trả về output thực thi."""
     try:
         data = request.get_json(silent=True) or {}
         code = data.get('code')
@@ -117,6 +124,7 @@ def run_code():
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_code():
+    """Phân tích mã C, phát hiện lỗi và gọi AI để đưa ra gợi ý sửa lỗi."""
     try:
         data = request.get_json(silent=True) or {}
         code = data.get('code')
@@ -203,6 +211,7 @@ def analyze_code():
 
 @app.route('/api/suggestions', methods=['POST'])
 def get_suggestions():
+    """Nhận gợi ý sửa lỗi từ AI dựa trên code và thông điệp lỗi hiện tại."""
     try:
         data = request.get_json(silent=True) or {}
         code = data.get('code')
@@ -273,6 +282,7 @@ def get_problem(problem_id):
 
 @app.route('/api/problems', methods=['POST'])
 def create_problem():
+    """Tạo một đề bài mới cho học sinh luyện tập."""
     user = get_current_user()
     if not user:
         return jsonify({'success': False, 'error': 'Vui lòng đăng nhập'}), 401
@@ -403,6 +413,7 @@ def admin_delete_user(user_id):
 
 @app.route('/api/submissions/me', methods=['GET'])
 def list_my_submissions():
+    """Liệt kê lịch sử bài làm của người dùng đang đăng nhập."""
     user = get_current_user()
     if not user:
         return jsonify({'success': False, 'error': 'Vui lòng đăng nhập'}), 401
@@ -529,6 +540,7 @@ def register():
 
 @app.route('/api/auth/login', methods=['POST'])
 def login():
+    """Xác thực người dùng và tạo session sau khi đăng nhập thành công."""
     data = request.get_json(silent=True) or {}
     username = (data.get('username') or '').strip()
     password = (data.get('password') or '').strip()
@@ -617,6 +629,7 @@ def serve_frontend(path):
 
 
 def get_current_user():
+    """Lấy thông tin người dùng hiện tại từ session hiện tại."""
     user_id = session.get('user_id')
     if not user_id:
         return None
